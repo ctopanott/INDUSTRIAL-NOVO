@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Partidas de Motores</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@600;800&display=swap">
+<style>
+/* Layout: painel elétrico — faixa escura no topo como porta de quadro, abas tipo etiqueta de trilho DIN, conteúdo em cartões claros */
+:root{
+  --bg:#e8ecf0; --panel:#ffffff; --panel2:#f3f5f8; --ink:#141c25; --muted:#556271; --rule:#cdd5de;
+  --door:#1d2733; --door-ink:#e9eef3; --accent:#ffc928; --accent-ink:#1a1500;
+  --wire:#3a4552; --live:#f76707; --glow:rgba(247,103,7,.28);
+  --ph1:#e03131; --ph2:#d9a400; --ph3:#7950f2; --danger:#e03131; --ok:#2b8a3e;
+  --lamp-g:#37b24d; --lamp-r:#f03e3e; --anil:#ffffff; --anil-ink:#141c25;
+  --f-disp:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10151b; --panel:#19212b; --panel2:#202a35; --ink:#e7edf3; --muted:#9aa8b6; --rule:#2e3a47;
+  --door:#0b1016; --door-ink:#e9eef3; --accent:#ffc928; --accent-ink:#1a1500;
+  --wire:#8494a5; --live:#ff8a3d; --glow:rgba(255,138,61,.3);
+  --ph1:#ff6b6b; --ph2:#ffd43b; --ph3:#9775fa; --danger:#ff6b6b; --ok:#51cf66;
+  --lamp-g:#51cf66; --lamp-r:#ff6b6b; --anil:#e7edf3; --anil-ink:#10151b; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10151b; --panel:#19212b; --panel2:#202a35; --ink:#e7edf3; --muted:#9aa8b6; --rule:#2e3a47;
+  --door:#0b1016; --door-ink:#e9eef3; --accent:#ffc928; --accent-ink:#1a1500;
+  --wire:#8494a5; --live:#ff8a3d; --glow:rgba(255,138,61,.3);
+  --ph1:#ff6b6b; --ph2:#ffd43b; --ph3:#9775fa; --danger:#ff6b6b; --ok:#51cf66;
+  --lamp-g:#51cf66; --lamp-r:#ff6b6b; --anil:#e7edf3; --anil-ink:#10151b; color-scheme:dark}
+
+html{font-size:16px}
+:root.tv{font-size:21px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:1rem;line-height:1.55;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--door)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+:root.tv .wrap{max-width:1700px}
+h1,h2,h3{font-family:var(--f-disp);letter-spacing:.01em;text-wrap:balance;line-height:1.05;margin:0}
+p{margin:0}
+
+/* topo */
+.door{background:var(--door);color:var(--door-ink)}
+.door .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:14px 10px;flex-wrap:wrap}
+.brand{display:flex;flex-direction:column;gap:2px;min-width:0}
+.brand small{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.brand h1{font-size:1.9rem;font-weight:800;text-transform:uppercase}
+.tvbtn{font:700 .9rem var(--f-body);background:transparent;color:var(--door-ink);border:1.5px solid #5d6c7c;border-radius:6px;padding:8px 12px;cursor:pointer}
+.tvbtn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--door);border-bottom:3px solid var(--accent)}
+.tabs .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:8px;scrollbar-width:none}
+.tab{flex:0 0 auto;font:700 1rem var(--f-disp);letter-spacing:.04em;text-transform:uppercase;color:#c2ccd6;background:#2a3644;border:0;border-radius:5px;padding:8px 14px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.tab b{font-family:var(--f-mono);font-size:.8rem;background:#3c4a5a;color:#fff;border-radius:3px;padding:1px 6px}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tab[aria-selected="true"] b{background:var(--accent-ink);color:var(--accent)}
+.tab:focus-visible,.tvbtn:focus-visible,.pb:focus-visible,button:focus-visible{outline:3px solid var(--live);outline-offset:2px}
+
+main{padding-block:20px 60px}
+section[data-route]{display:flex;flex-direction:column;gap:22px}
+.hero{display:grid;gap:14px;grid-template-columns:1fr}
+.hero .eyebrow{font-family:var(--f-mono);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.hero h2{font-size:2.6rem;font-weight:800}
+.hero .lead{font-size:1.12rem;max-width:62ch}
+.why{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.why > div{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:14px 16px;min-width:0}
+.why h3{font-size:1.15rem;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:18px;min-width:0}
+.card > h3{font-size:1.5rem;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.card > h3 .n{font-family:var(--f-mono);font-size:.85rem;background:var(--ink);color:var(--panel);border-radius:4px;padding:2px 7px}
+
+.nr10{display:flex;gap:12px;align-items:flex-start;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:12px 16px;font-size:.95rem}
+.nr10 strong{font-family:var(--f-disp);font-size:1.15rem;text-transform:uppercase;white-space:nowrap}
+
+/* simulador */
+.sim{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:980px){.sim{grid-template-columns:minmax(0,5fr) minmax(0,4fr)}}
+:root.tv .sim{grid-template-columns:minmax(0,5fr) minmax(0,4fr)}
+.dg{margin:0;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.dg figcaption{font-family:var(--f-disp);font-weight:700;font-size:1.25rem;text-transform:uppercase;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.dg figcaption span{font-family:var(--f-body);font-weight:400;text-transform:none;font-size:.82rem;color:var(--muted)}
+.svgwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.svgwrap svg{display:block;margin:0 auto;height:auto}
+.ctl{grid-column:1/-1;background:var(--panel2);border:1px solid var(--rule);border-radius:10px;padding:14px;display:grid;gap:14px;grid-template-columns:1fr}
+@media (min-width:760px){.ctl{grid-template-columns:auto 1fr auto;align-items:center}}
+:root.tv .ctl{grid-template-columns:auto 1fr auto;align-items:center}
+.btnrow{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.pb{width:78px;height:78px;border-radius:50%;border:5px solid #28313b;font:800 1.05rem var(--f-disp);color:#fff;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;box-shadow:0 5px 0 #0d1218;transition:transform .05s,box-shadow .05s}
+.pb small{font:700 .66rem var(--f-body);text-transform:uppercase;margin-top:3px;opacity:.9}
+.pb.red{background:#d9302c}.pb.green{background:#2f9e44}.pb.blue{background:#1c7ed6}
+.pb.down{transform:translateY(4px);box-shadow:0 1px 0 #0d1218}
+.sw{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.78rem;color:var(--muted);text-align:center}
+.toggle{width:64px;height:34px;border-radius:17px;border:2px solid var(--rule);background:var(--panel);position:relative;cursor:pointer;padding:0}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--muted);transition:left .15s}
+.toggle[aria-pressed="true"]{background:var(--ok);border-color:var(--ok)}
+.toggle[aria-pressed="true"]::after{left:33px;background:#fff}
+.toggle.warn[aria-pressed="true"]{background:var(--danger);border-color:var(--danger)}
+.status{display:flex;flex-direction:column;gap:8px;min-width:0}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:800 .85rem var(--f-mono);padding:4px 10px;border-radius:4px;background:var(--panel);border:1.5px solid var(--rule);color:var(--muted)}
+.chip.on{background:var(--live);border-color:var(--live);color:#fff}
+.mstat{display:flex;align-items:center;gap:10px;font-family:var(--f-disp);font-size:1.6rem;font-weight:700;text-transform:uppercase;line-height:1}
+.mstat svg{flex:0 0 auto}
+.mstat.alarm{color:var(--danger)}
+.tbar{height:10px;border-radius:5px;background:var(--panel);border:1px solid var(--rule);overflow:hidden}
+.tbar i{display:block;height:100%;width:0;background:var(--live)}
+.tline{font-size:.82rem;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.tline input{accent-color:var(--live)}
+.hint{font-size:.85rem;color:var(--muted)}
+.alert{grid-column:1/-1;background:var(--danger);color:#fff;border-radius:8px;padding:10px 14px;font-weight:700}
+
+/* svg */
+svg .wr{fill:none;stroke:var(--wire);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .12s}
+svg .wr.live,svg .blade.live{stroke:var(--live);stroke-width:3.4;filter:drop-shadow(0 0 3px var(--glow))}
+svg .wr.p1,svg .blade.p1{stroke:var(--ph1);stroke-width:3.2}
+svg .wr.p2,svg .blade.p2{stroke:var(--ph2);stroke-width:3.2}
+svg .wr.p3,svg .blade.p3{stroke:var(--ph3);stroke-width:3.2}
+svg .wr.short,svg .blade.short{stroke:var(--danger);stroke-width:4;stroke-dasharray:6 4;animation:dash .4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-20}}
+svg .blade{fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;transition:d .08s}
+svg .act{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-dasharray:4 3}
+svg .act.solid{stroke-dasharray:none}
+svg .x{stroke:var(--ink);stroke-width:1.8}
+svg .omit .blade,svg .omit .wr,svg .omit .act{stroke-dasharray:5 4;opacity:.75}
+svg .removed{stroke:var(--danger)!important;stroke-dasharray:3 3}
+svg .dot{fill:var(--wire)} svg .dot.live{fill:var(--live)} svg .dot.p1{fill:var(--ph1)} svg .dot.p2{fill:var(--ph2)} svg .dot.p3{fill:var(--ph3)} svg .dot.short{fill:var(--danger)}
+svg .tg rect{fill:var(--accent);stroke:#8a6d00;stroke-width:.8}
+svg .tg text{font:800 11px var(--f-mono);fill:var(--accent-ink);text-anchor:middle}
+svg .an rect{fill:var(--anil);stroke:var(--ink);stroke-width:1.3}
+svg .an text{font:800 11px var(--f-mono);fill:var(--anil-ink);text-anchor:middle}
+svg .lab{font:700 16px var(--f-disp);fill:var(--ink)}
+svg .sub{font:400 11.5px var(--f-body);fill:var(--muted)}
+svg .bus{font:700 15px var(--f-disp);fill:var(--muted);text-anchor:middle}
+svg .link{stroke:var(--muted);stroke-width:1.4;stroke-dasharray:3 4;fill:none}
+svg .coil rect{fill:var(--panel);stroke:var(--ink);stroke-width:2.2;transition:fill .12s}
+svg .coil.on rect{fill:var(--live);stroke:var(--live)}
+svg .lamp circle{fill:var(--panel);stroke:var(--ink);stroke-width:2}
+svg .lamp path{stroke:var(--ink);stroke-width:1.6}
+svg .lamp.on.g circle{fill:var(--lamp-g);stroke:var(--lamp-g);filter:drop-shadow(0 0 8px var(--lamp-g))}
+svg .lamp.on.r circle{fill:var(--lamp-r);stroke:var(--lamp-r);filter:drop-shadow(0 0 8px var(--lamp-r))}
+svg .hit{fill:transparent;cursor:pointer;touch-action:none}
+svg .ftbox{fill:none;stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4}
+svg .mot{fill:var(--panel);stroke:var(--ink);stroke-width:2.4}
+svg .mtxt{font:800 18px var(--f-disp);fill:var(--ink);text-anchor:middle}
+svg .rotor{transform-box:fill-box;transform-origin:center}
+svg .rotor path{fill:var(--muted);opacity:.55}
+svg .run .rotor path{fill:var(--live);opacity:.9}
+svg .run .rotor{animation:spin var(--spd,.7s) linear infinite}
+svg .run.rev .rotor{animation-direction:reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+svg .term{fill:var(--panel);stroke:var(--ink);stroke-width:1.8}
+svg .wind{fill:none;stroke:var(--ink);stroke-width:2}
+svg .run-w .wind{stroke:var(--live);stroke-width:2.6}
+svg .mbox{fill:var(--panel2);stroke:var(--ink);stroke-width:1.6}
+.mini .rotor{transform-box:fill-box;transform-origin:center}
+.mini.run .rotor{animation:spin var(--spd,.7s) linear infinite}
+.mini.run.rev .rotor{animation-direction:reverse}
+.mini .rotor path{fill:var(--muted)} .mini.run .rotor path{fill:var(--live)}
+@media (prefers-reduced-motion:reduce){svg .run .rotor,.mini.run .rotor,svg .wr.short{animation:none}}
+
+/* tabelas */
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:.95rem;min-width:520px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:700 .8rem var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--panel2)}
+td.n{width:1%;white-space:nowrap}
+.an-h{display:inline-block;font:800 .82rem var(--f-mono);background:var(--anil);color:var(--anil-ink);border:1.5px solid var(--ink);border-radius:4px;padding:0 7px;min-width:26px;text-align:center}
+.t{display:inline-block;font:800 .82rem var(--f-mono);background:var(--accent);color:var(--accent-ink);border-radius:3px;padding:0 5px;margin-left:2px}
+tr.ft td{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--muted)}
+tr.bench td{background:color-mix(in srgb,var(--accent) 22%,var(--panel));font-weight:700}
+tr.star td{background:color-mix(in srgb,var(--live) 13%,var(--panel))}
+.cols2{display:grid;gap:16px;grid-template-columns:1fr}
+@media (min-width:900px){.cols2{grid-template-columns:1fr 1fr}}
+:root.tv .cols2{grid-template-columns:1fr 1fr}
+
+ol.steps{list-style:none;counter-reset:s;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start}
+ol.steps li::before{content:counter(s);font:800 1rem var(--f-mono);background:var(--ink);color:var(--panel);border-radius:50%;width:30px;height:30px;display:grid;place-items:center}
+ul.mat{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}
+ul.mat li{background:var(--panel2);border:1px solid var(--rule);border-radius:6px;padding:6px 10px;font-size:.92rem}
+ul.mat li b{font-family:var(--f-mono)}
+.check{display:flex;flex-direction:column;gap:8px}
+.check label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.check input{width:22px;height:22px;margin-top:1px;accent-color:var(--ok);flex:0 0 auto}
+.check label:has(input:checked) span{color:var(--muted);text-decoration:line-through}
+.check .stop{background:var(--panel2);border-left:4px solid var(--danger);padding:8px 10px;border-radius:4px;font-weight:700}
+.errs{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.errs > div{border:1px solid var(--rule);border-radius:8px;padding:12px;background:var(--panel2)}
+.errs b{display:block;color:var(--danger);font-family:var(--f-disp);font-size:1.1rem;text-transform:uppercase}
+details{border:1px solid var(--rule);border-radius:8px;padding:10px 14px;background:var(--panel2)}
+details + details{margin-top:8px}
+summary{cursor:pointer;font-weight:700}
+details p{margin-top:8px;color:var(--ink)}
+.note{border-left:4px solid var(--accent);background:var(--panel2);padding:10px 14px;border-radius:4px;font-size:.95rem}
+.legend{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.legend > div{background:var(--panel2);border:1px solid var(--rule);border-radius:8px;padding:12px;display:flex;gap:12px;align-items:center}
+.legend svg{flex:0 0 auto}
+.big-rule{font-family:var(--f-disp);font-size:1.7rem;font-weight:700;line-height:1.15;text-wrap:balance}
+.big-rule em{font-style:normal;background:var(--anil);border:2px solid var(--ink);border-radius:5px;padding:0 6px;font-family:var(--f-mono);font-size:1.3rem}
+.next{display:flex;justify-content:flex-end}
+.next button{font:700 1.1rem var(--f-disp);text-transform:uppercase;background:var(--ink);color:var(--panel);border:0;border-radius:6px;padding:12px 18px;cursor:pointer}
+:root.tv .hide-tv{display:none}
+</style>
+</head>
+<body>
+
+
+<header class="door">
+  <div class="wrap">
+    <div class="brand"><small>Comandos elétricos · bancada 220 V</small><h1>Partidas de Motores</h1></div>
+    <button class="tvbtn" id="tvbtn" aria-pressed="false">Modo TV</button>
+  </div>
+</header>
+<nav class="tabs" aria-label="Etapas">
+  <div class="wrap" role="tablist">
+    <button class="tab" role="tab" data-go="inicio"><b>0</b>Comece aqui</button>
+    <button class="tab" role="tab" data-go="etapa-1"><b>1</b>Impulso</button>
+    <button class="tab" role="tab" data-go="etapa-2"><b>2</b>Com selo</button>
+    <button class="tab" role="tab" data-go="etapa-3"><b>3</b>Reversão</button>
+    <button class="tab" role="tab" data-go="etapa-4"><b>4</b>Estrela-triângulo</button>
+    <button class="tab" role="tab" data-go="resumo"><b>✓</b>Resumo</button>
+  </div>
+</nav>
+
+<main class="wrap" id="app">
+
+<!-- ============ 0 ============ -->
+<section data-route="inicio">
+  <div class="hero">
+    <p class="eyebrow">Antes de montar</p>
+    <h2>Como ler os diagramas</h2>
+    <p class="lead">Hoje vamos montar quatro partidas, uma em cima da outra. Cada etapa tem o diagrama que <strong>funciona na tela</strong>: segure os botões e veja por onde a corrente passa.</p>
+  </div>
+
+  <div class="card">
+    <p class="big-rule">A regra mais importante: <em>fio com o mesmo número = mesmo ponto</em>. Tudo que tem a anilha <em>4</em> está ligado junto, não importa onde esteja na bancada.</p>
+  </div>
+
+  <div class="card">
+    <h3>Os números dos bornes</h3>
+    <div class="legend" id="legend"></div>
+    <p class="note" style="margin-top:14px">O <b>último algarismo</b> diz o tipo do contato: <b>1-2 = NF</b> (fechado em repouso, "deixa passar") e <b>3-4 = NA</b> (aberto em repouso, "só passa quando aciona"). No contator, o primeiro algarismo é a posição: <b>13-14</b> é o 1º contato (NA) e <b>21-22</b> é o 2º (NF).</p>
+  </div>
+
+  <div class="card">
+    <h3>As letras de cada peça</h3>
+    <ul class="mat">
+      <li><b>Q1</b> disjuntor da força (motor)</li>
+      <li><b>Q2</b> disjuntor do comando</li>
+      <li><b>K1, K2, K3</b> contatores</li>
+      <li><b>KT1</b> temporizador</li>
+      <li><b>S0</b> botão desliga (vermelho, NF)</li>
+      <li><b>S1, S2</b> botões liga (NA)</li>
+      <li><b>H1, H2</b> sinaleiros</li>
+      <li><b>FT1</b> relé térmico</li>
+      <li><b>M</b> motor</li>
+    </ul>
+  </div>
+
+  <div class="cols2">
+    <div class="card">
+      <h3>Força e comando</h3>
+      <p><b>Força</b> é o caminho grosso, que leva energia da rede até o motor (três fases).<br><b>Comando</b> é o caminho que liga as bobinas dos contatores. Aqui o comando é <b>220 V entre fases</b> (L1 e L2, pelo Q2).</p>
+      <p style="margin-top:10px">O contator é a "ponte": a bobina (A1-A2) fica no comando e os contatos principais (1-2, 3-4, 5-6) ficam na força.</p>
+    </div>
+    <div class="card">
+      <h3>E o relé térmico?</h3>
+      <p>Ele aparece <b>tracejado</b> nos diagramas. Na nossa bancada ele <b>não é montado</b>: no lugar dele vai um fio direto (ponte).</p>
+      <p style="margin-top:10px">Numa instalação de verdade ele é <b>obrigatório</b>. O disjuntor protege contra curto, mas não percebe uma sobrecarga lenta, como um motor travado ou com a bomba entupida. O térmico esquenta, abre o 95-96 e desliga o comando antes do motor queimar.</p>
+    </div>
+  </div>
+
+  <div class="nr10"><strong>NR-10</strong><span>Desenergize, bloqueie e sinalize. Teste a ausência de tensão antes de mexer. Ninguém energiza a bancada sem a liberação do instrutor, depois do teste a frio.</span></div>
+  <div class="next"><button data-go="etapa-1">Começar etapa 1 →</button></div>
+</section>
+
+<!-- ============ 1 ============ -->
+<section data-route="etapa-1" hidden>
+  <div class="hero">
+    <p class="eyebrow">Etapa 1 de 4</p>
+    <h2>Partida direta por impulso</h2>
+    <p class="lead">Enquanto você <b>segura</b> o botão S1, o motor gira. Soltou, parou. É a partida mais simples que existe, e serve para entender por que a etapa 2 precisa do selo.</p>
+  </div>
+  <div class="why">
+    <div><h3>Onde se usa</h3><p>Talha e ponte rolante (botoeira pendente), ajuste de posição de máquina, avanço lento de esteira.</p></div>
+    <div><h3>Por quê</h3><p>Por segurança: o operador precisa estar segurando o botão. Se largar, a máquina para na hora.</p></div>
+    <div><h3>O segredo</h3><p>A bobina do K1 só fica ligada enquanto existe um caminho fechado de L1 até L2.</p></div>
+  </div>
+  <div class="sim" data-sim="1"></div>
+  <div class="cols2">
+    <div class="card"><h3><span class="n">A</span>Fios do comando</h3><div class="tblwrap" data-tbl="c1"></div></div>
+    <div class="card"><h3><span class="n">B</span>Fios da força</h3><div class="tblwrap" data-tbl="f1"></div></div>
+  </div>
+  <div class="cols2">
+    <div class="card"><h3>Como funciona</h3>
+      <ol class="steps">
+        <li><span>Q1 e Q2 ligados. O comando tem tensão até o borne <span class="t">3</span> do S1.</span></li>
+        <li><span>Você aperta o S1: o contato <span class="t">3</span>-<span class="t">4</span> fecha.</span></li>
+        <li><span>A corrente chega no <span class="t">A1</span> da bobina do K1. O K1 puxa e fecha os contatos de força.</span></li>
+        <li><span>O motor gira.</span></li>
+        <li><span>Você solta o S1: o 3-4 abre, a bobina perde a tensão, o K1 solta e o motor para.</span></li>
+      </ol>
+    </div>
+    <div class="card"><h3>Material</h3>
+      <ul class="mat"><li><b>Q1</b> disjuntor tripolar</li><li><b>Q2</b> disjuntor bipolar</li><li><b>K1</b> contator</li><li><b>S0</b> botão vermelho NF</li><li><b>S1</b> botão verde NA</li><li><b>M</b> motor W22 em triângulo</li><li>cabos, terminais e anilhas</li></ul>
+      <p class="note" style="margin-top:12px">O S0 já entra aqui, mesmo sem ser preciso para o impulso. Assim, na etapa 2 você só acrescenta o selo, sem desmontar nada.</p>
+    </div>
+  </div>
+  <div class="card"><h3>Teste a frio</h3><div class="check" data-ck="1"></div></div>
+  <div class="card"><h3>Erros mais comuns</h3>
+    <div class="errs">
+      <div><b>Nada acontece</b>Fio no 1-2 do S1 em vez do 3-4. O 1-2 é NF: ele abre quando você aperta.</div>
+      <div><b>Motor liga sozinho</b>O S1 foi ligado no contato NF (1-2). Confira os números do bloco.</div>
+      <div><b>Q2 desarma</b>Fio de L1 encostando em L2, ou o A2 ligado no mesmo ponto do A1.</div>
+    </div>
+  </div>
+  <div class="card"><h3>Perguntas</h3>
+    <details><summary>Por que o motor para quando eu solto o S1?</summary><p>Porque o S1 é NA: soltou, ele abre, e a bobina do K1 fica sem caminho até L2. Sem bobina energizada, o contator solta.</p></details>
+    <details><summary>Para que serve o Q2 se já existe o Q1?</summary><p>O Q1 protege a força (motor). O Q2 protege os fios finos do comando. Um curto no comando derruba só o Q2.</p></details>
+    <details><summary>O que mudaria se o S1 fosse ligado no 1-2?</summary><p>A bobina ficaria ligada direto, e o motor só pararia enquanto o botão estivesse apertado. É o contrário do que queremos.</p></details>
+  </div>
+  <div class="nr10"><strong>NR-10</strong><span>Energização só com a liberação do instrutor, depois do teste a frio.</span></div>
+  <div class="next"><button data-go="etapa-2">Próxima: com selo →</button></div>
+</section>
+
+<!-- ============ 2 ============ -->
+<section data-route="etapa-2" hidden>
+  <div class="hero">
+    <p class="eyebrow">Etapa 2 de 4</p>
+    <h2>Partida direta com selo</h2>
+    <p class="lead">Aperta o S1 uma vez e o motor <b>continua ligado</b> mesmo depois de soltar. Quem segura a bobina agora é o próprio contator, pelo contato <span class="t">13</span>-<span class="t">14</span>. Isso é o <b>selo</b>: a memória do circuito.</p>
+  </div>
+  <div class="why">
+    <div><h3>Onde se usa</h3><p>Esteira, bomba d'água, exaustor, compressor pequeno: tudo que liga e fica ligado.</p></div>
+    <div><h3>Por quê</h3><p>Ninguém consegue ficar segurando o botão o dia inteiro. O selo "lembra" que você mandou ligar.</p></div>
+    <div><h3>O segredo</h3><p>O 13-14 do K1 fica em <b>paralelo</b> com o 3-4 do S1. Os dois levam a corrente do fio <span class="an-h">3</span> para o fio <span class="an-h">4</span>.</p></div>
+  </div>
+  <div class="sim" data-sim="2"></div>
+  <div class="cols2">
+    <div class="card"><h3><span class="n">A</span>Fios do comando</h3><div class="tblwrap" data-tbl="c2"></div></div>
+    <div class="card"><h3><span class="n">B</span>Fios da força</h3><div class="tblwrap" data-tbl="f1"></div><p class="note" style="margin-top:12px">A força é a mesma da etapa 1. Não mexa nela.</p></div>
+  </div>
+  <div class="cols2">
+    <div class="card"><h3>Como funciona</h3>
+      <ol class="steps">
+        <li><span>Em repouso, o NF <span class="t">21</span>-<span class="t">22</span> do K1 está fechado: o H2 (desligado) acende.</span></li>
+        <li><span>Aperta o S1: a bobina do K1 energiza pelo 3-4 do botão.</span></li>
+        <li><span>O K1 puxa. O seu 13-14 fecha e passa a levar a corrente também. O 21-22 abre e o H2 apaga; o H1 (ligado) acende.</span></li>
+        <li><span>Solta o S1: a corrente continua passando pelo 13-14. O motor segue girando. <b>Isso é o selo.</b></span></li>
+        <li><span>Aperta o S0: o NF abre, corta o fio <span class="an-h">3</span>, a bobina cai, o 13-14 abre e o selo "desfaz".</span></li>
+      </ol>
+    </div>
+    <div class="card"><h3>Material</h3>
+      <ul class="mat"><li>Tudo da etapa 1</li><li><b>H1</b> sinaleiro verde (ligado)</li><li><b>H2</b> sinaleiro vermelho (desligado)</li><li>bloco auxiliar, se o K1 não tiver 21-22</li></ul>
+      <p class="note" style="margin-top:12px">Siga a cor de sinaleiro que a escola usa. Aqui: verde = motor ligado, vermelho = motor desligado.</p>
+    </div>
+  </div>
+  <div class="card"><h3>Teste a frio</h3><div class="check" data-ck="2"></div></div>
+  <div class="card"><h3>Erros mais comuns</h3>
+    <div class="errs">
+      <div><b>Desliga quando solta o S1</b>Faltou o selo, ou ele foi ligado no 21-22 (NF) em vez do 13-14.</div>
+      <div><b>Não desliga no S0</b>O selo foi ligado antes do S0 (no fio <span class="an-h">2</span>). O 13 tem que sair do fio <span class="an-h">3</span>, depois do S0.</div>
+      <div><b>Liga sozinho ao fechar Q2</b>13-14 ligado de L1 direto para o A1, sem passar pelo S0.</div>
+      <div><b>H2 nunca apaga</b>Lâmpada ligada no 13-14 ou direto no fio 3. Ela precisa do 21-22.</div>
+    </div>
+  </div>
+  <div class="card"><h3>Perguntas</h3>
+    <details><summary>Por que o selo fica em paralelo e não em série com o S1?</summary><p>Em paralelo, ele oferece um segundo caminho. Quando o S1 abre, a corrente continua pelo 13-14. Em série, os dois teriam que estar fechados juntos, e o motor nunca ligaria.</p></details>
+    <details><summary>Por que o S0 fica antes do selo?</summary><p>Para cortar tudo: o caminho do botão e o caminho do selo. Se o S0 ficasse só no ramo do S1, o selo continuaria segurando a bobina.</p></details>
+    <details><summary>Se faltar energia e voltar, o motor liga sozinho?</summary><p>Não. Sem energia o K1 solta e o selo abre. Para religar é preciso apertar o S1 de novo. Isso é uma proteção.</p></details>
+  </div>
+  <div class="nr10"><strong>NR-10</strong><span>Energização só com a liberação do instrutor, depois do teste a frio.</span></div>
+  <div class="next"><button data-go="etapa-3">Próxima: reversão →</button></div>
+</section>
+
+<!-- ============ 3 ============ -->
+<section data-route="etapa-3" hidden>
+  <div class="hero">
+    <p class="eyebrow">Etapa 3 de 4</p>
+    <h2>Partida direta com reversão</h2>
+    <p class="lead">Para o motor girar ao contrário, basta <b>trocar duas fases</b>. O K1 liga na ordem normal (horário) e o K2 liga com L1 e L3 invertidas (anti-horário). Os dois <b>nunca</b> podem fechar juntos.</p>
+  </div>
+  <div class="why">
+    <div><h3>Onde se usa</h3><p>Portão de garagem, guincho, elevador de carga, mesa de máquina que vai e volta.</p></div>
+    <div><h3>Por quê trocar fases</h3><p>Trocando duas fases, o campo girante dentro do motor muda de sentido, e o eixo acompanha.</p></div>
+    <div><h3>Intertravamento</h3><p>Se K1 e K2 fecharem juntos, L1 encosta em L3: <b>curto-circuito</b>. O NF 21-22 de um contator fica em série com a bobina do outro para impedir.</p></div>
+  </div>
+  <div class="sim" data-sim="3"></div>
+  <div class="cols2">
+    <div class="card"><h3><span class="n">A</span>Fios do comando</h3><div class="tblwrap" data-tbl="c3"></div></div>
+    <div class="card"><h3><span class="n">B</span>Fios da força</h3><div class="tblwrap" data-tbl="f3"></div></div>
+  </div>
+  <div class="cols2">
+    <div class="card"><h3>Como funciona</h3>
+      <ol class="steps">
+        <li><span>Aperta S1: K1 energiza e se sela pelo 13-14. O 21-22 do K1 abre: o ramo do K2 fica bloqueado.</span></li>
+        <li><span>Motor gira no sentido horário (L1-L2-L3 em 1-2-3).</span></li>
+        <li><span>Aperta S2 com o motor ligado: <b>nada acontece</b>. O intertravamento está funcionando.</span></li>
+        <li><span>Aperta S0: tudo desliga. Agora sim, aperta S2: K2 energiza e se sela; o 21-22 do K2 bloqueia o K1.</span></li>
+        <li><span>Motor gira no sentido anti-horário (L3-L2-L1 em 1-2-3).</span></li>
+      </ol>
+    </div>
+    <div class="card"><h3>Material</h3>
+      <ul class="mat"><li><b>Q1</b>, <b>Q2</b></li><li><b>K1</b> e <b>K2</b>, cada um com 1 NA (13-14) e 1 NF (21-22)</li><li><b>S0</b> NF</li><li><b>S1</b> NA (horário)</li><li><b>S2</b> NA (anti-horário)</li><li><b>M</b> motor em triângulo</li></ul>
+      <p class="note" style="margin-top:12px">Sempre pare antes de inverter. Inverter com o motor girando dá um tranco forte e um pico de corrente.</p>
+    </div>
+  </div>
+  <div class="card"><h3>Teste a frio</h3><div class="check" data-ck="3"></div></div>
+  <div class="card"><h3>Erros mais comuns</h3>
+    <div class="errs">
+      <div><b>Gira igual nos dois</b>Na força, o K2 não inverteu fases, ou inverteu as três. Troque só L1 e L3.</div>
+      <div><b>Intertravamento cruzado errado</b>O NF do K1 foi para a bobina do próprio K1. O NF do K1 vai no ramo do <b>K2</b>, e vice-versa.</div>
+      <div><b>Q1 desarma ao inverter</b>Intertravamento ausente ou ligado no 13-14. Desligue e confira no esquema.</div>
+      <div><b>K2 não sela</b>O 13-14 do K2 foi ligado no fio 4 (do K1). O selo do K2 é do fio 3 para o fio 6.</div>
+    </div>
+  </div>
+  <div class="card"><h3>Perguntas</h3>
+    <details><summary>Quais fases o K2 troca, e por que só duas?</summary><p>L1 e L3. Trocar duas inverte a sequência de fases e o sentido do campo. Trocar as três dá a mesma sequência de antes, e o motor continua no mesmo sentido.</p></details>
+    <details><summary>O que acontece se K1 e K2 fecharem juntos?</summary><p>L1 e L3 se encontram no borne do motor: curto-circuito entre fases. O Q1 desarma e os contatos podem soldar.</p></details>
+    <details><summary>Por que apertar S2 com o motor ligado não faz nada?</summary><p>Porque o 21-22 do K1 está aberto, em série com a bobina do K2. Enquanto o K1 estiver puxado, o K2 não tem caminho.</p></details>
+  </div>
+  <div class="nr10"><strong>NR-10</strong><span>O teste "sem intertravamento" é só na tela. Na bancada, nunca energize sem o intertravamento.</span></div>
+  <div class="next"><button data-go="etapa-4">Próxima: estrela-triângulo →</button></div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section data-route="etapa-4" hidden>
+  <div class="hero">
+    <p class="eyebrow">Etapa 4 de 4</p>
+    <h2>Partida estrela-triângulo</h2>
+    <p class="lead">O motor parte em <b>estrela</b>, com menos tensão em cada bobina, e depois do tempo do KT1 passa para <b>triângulo</b>, com a tensão normal. Resultado: a corrente na partida cai para cerca de <b>1/3</b>.</p>
+  </div>
+  <div class="why">
+    <div><h3>Por quê</h3><p>Na partida direta o motor puxa de 6 a 8 vezes a corrente normal. Em motores grandes isso derruba a tensão da fábrica e pesa na conta.</p></div>
+    <div><h3>A conta</h3><p>Em estrela, cada bobina recebe 220 ÷ 1,73 ≈ <b>127 V</b>. Em triângulo, recebe os <b>220 V</b> inteiros. Menos tensão, menos corrente, e menos força também.</p></div>
+    <div><h3>Exigências</h3><p>Motor de <b>6 pontas</b>, com tensão de triângulo igual à da rede (nosso W22 220/380 V em rede 220 V). Partida a vazio ou com carga leve.</p></div>
+  </div>
+  <div class="sim" data-sim="4"></div>
+  <div class="cols2">
+    <div class="card"><h3><span class="n">A</span>Fios do comando</h3><div class="tblwrap" data-tbl="c4"></div></div>
+    <div class="card"><h3><span class="n">B</span>Fios da força</h3><div class="tblwrap" data-tbl="f4"></div>
+      <p class="note" style="margin-top:12px"><b>Tire as pontes</b> da caixa de ligação do motor. Aqui quem fecha a estrela é o K3, e quem fecha o triângulo é o K2.</p></div>
+  </div>
+  <div class="cols2">
+    <div class="card"><h3>Como funciona</h3>
+      <ol class="steps">
+        <li><span>Aperta S1: K1 (rede) e KT1 (tempo) energizam. K1 se sela pelo 13-14.</span></li>
+        <li><span>Pelo contato <span class="t">15</span>-<span class="t">16</span> do KT1 (NF), o K3 entra: as pontas 4, 5 e 6 se juntam. <b>Motor em estrela.</b></span></li>
+        <li><span>O KT1 conta o tempo ajustado.</span></li>
+        <li><span>Acabou o tempo: o 15-16 abre e o K3 cai. O 21-22 do K3 fecha e o 15-18 do KT1 fecha: o K2 entra. <b>Motor em triângulo.</b></span></li>
+        <li><span>K2 e K3 são intertravados (21-22 cruzado): nunca fecham juntos. S0 desliga tudo.</span></li>
+      </ol>
+    </div>
+    <div class="card"><h3>Material</h3>
+      <ul class="mat"><li><b>Q1</b>, <b>Q2</b></li><li><b>K1</b> rede (13-14)</li><li><b>K2</b> triângulo (21-22)</li><li><b>K3</b> estrela (21-22)</li><li><b>KT1</b> temporizador com retardo na energização</li><li><b>S0</b> NF, <b>S1</b> NA</li><li><b>M</b> motor de 6 pontas, sem pontes</li></ul>
+      <p class="note" style="margin-top:12px">Confira na etiqueta do seu temporizador: <b>15</b> é o comum, <b>16</b> o NF e <b>18</b> o NA. Se o seu modelo usar outros números, siga a etiqueta.</p>
+    </div>
+  </div>
+  <div class="card"><h3>Teste a frio</h3><div class="check" data-ck="4"></div></div>
+  <div class="card"><h3>Erros mais comuns</h3>
+    <div class="errs">
+      <div><b>Gira fraco o tempo todo</b>Nunca passa para triângulo: KT1 sem ajuste de tempo, ou o 15-18 não foi ligado.</div>
+      <div><b>Q1 desarma na troca</b>K2 e K3 sem intertravamento, ou o K2 ligado nas pontas erradas.</div>
+      <div><b>Tranco ao trocar</b>Normal um pequeno tranco. Se for forte, o tempo está curto: o motor ainda não tinha embalado.</div>
+      <div><b>Motor ronca e não gira</b>Ponte esquecida na caixa de ligação, ou uma ponta (4, 5 ou 6) solta.</div>
+    </div>
+  </div>
+  <div class="card"><h3>Perguntas</h3>
+    <details><summary>Por que a partida em estrela tem menos corrente?</summary><p>Porque cada bobina recebe 127 V em vez de 220 V. A corrente de linha cai para cerca de 1/3 da partida direta. O conjugado (força) também cai para cerca de 1/3.</p></details>
+    <details><summary>Qual contator fica ligado o tempo todo?</summary><p>O K1 (rede). O K3 só fica na partida, e o K2 só depois do tempo.</p></details>
+    <details><summary>Por que esse motor pode ser usado em rede 220 V?</summary><p>Porque ele é 220/380 V: em triângulo ele trabalha com 220 V. A estrela serve só para a partida.</p></details>
+    <details><summary>O que acontece se K2 e K3 fecharem juntos?</summary><p>As pontas 4, 5 e 6 recebem fases diferentes e ao mesmo tempo estão unidas pelo K3: curto entre fases.</p></details>
+  </div>
+  <div class="nr10"><strong>NR-10</strong><span>O teste "sem intertravamento" é só na tela. Na bancada, nunca energize sem o intertravamento.</span></div>
+  <div class="next"><button data-go="resumo">Ver resumo →</button></div>
+</section>
+
+<!-- ============ resumo ============ -->
+<section data-route="resumo" hidden>
+  <div class="hero">
+    <p class="eyebrow">Fechamento</p>
+    <h2>As quatro partidas lado a lado</h2>
+  </div>
+  <div class="card">
+    <div class="tblwrap"><table>
+      <thead><tr><th>Partida</th><th>Contatores</th><th>Botões</th><th>Corrente de partida</th><th>Peça-chave</th><th>Uso típico</th></tr></thead>
+      <tbody>
+        <tr><td><b>1 · Impulso</b></td><td>K1</td><td>S0, S1</td><td>Alta (6 a 8× a nominal)</td><td>Só o 3-4 do S1</td><td>Talha, ajuste de posição</td></tr>
+        <tr><td><b>2 · Com selo</b></td><td>K1</td><td>S0, S1</td><td>Alta (6 a 8×)</td><td>Selo 13-14 em paralelo com S1</td><td>Bomba, esteira, exaustor</td></tr>
+        <tr><td><b>3 · Reversão</b></td><td>K1, K2</td><td>S0, S1, S2</td><td>Alta (6 a 8×)</td><td>Troca L1↔L3 e intertravamento 21-22</td><td>Portão, guincho</td></tr>
+        <tr><td><b>4 · Estrela-triângulo</b></td><td>K1, K2, K3 + KT1</td><td>S0, S1</td><td>Cerca de 1/3 da direta</td><td>KT1 15-16 / 15-18 e intertravamento K2/K3</td><td>Motores maiores, partida leve</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="cols2">
+    <div class="card"><h3>O que sempre se repete</h3>
+      <ol class="steps">
+        <li><span>S0 (NF) sempre vem primeiro, antes de tudo.</span></li>
+        <li><span>Selo (13-14) sempre em paralelo com o botão liga.</span></li>
+        <li><span>Dois contatores que não podem fechar juntos = NF 21-22 de um no ramo do outro.</span></li>
+        <li><span>A2 de todas as bobinas vai para o mesmo lado (L2).</span></li>
+      </ol>
+    </div>
+    <div class="card"><h3>Desafio final</h3>
+      <p>Na reversão, faça o motor poder trocar de sentido <b>sem apertar o S0</b>. Dica: use o contato NF dos próprios botões S1 e S2 (intertravamento por botoeira), <b>mantendo</b> o intertravamento dos contatores.</p>
+      <details style="margin-top:12px"><summary>Resposta (instrutor)</summary><p>No ramo do K1, coloque o 1-2 (NF) do S2 em série antes do S1/selo; no ramo do K2, o 1-2 do S1. Ao apertar S2 com o K1 ligado, o NF do S2 abre primeiro e derruba o K1, e o NA fecha em seguida e liga o K2. O 21-22 dos contatores continua obrigatório.</p></details>
+    </div>
+  </div>
+  <div class="nr10"><strong>NR-10</strong><span>Terminou? Desligue Q1 e Q2, bloqueie, e só então desmonte.</span></div>
+</section>
+</main>
+
+<script>
+(()=>{
+/* ---------- util ---------- */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+
+/* ---------- elementos de desenho ---------- */
+const W=(n,...p)=>({t:'w',n,p}), D=(n,x,y)=>({t:'dot',n,x,y}), A=(n,x,y)=>({t:'an',n,x,y});
+const TX=(x,y,s,cls='lab',anchor)=>({t:'txt',x,y,s,cls,anchor});
+const C=(kind,x,y,a,b,dev,t1,t2,lab,sub,opt={})=>Object.assign({t:'c',kind,x,y,a,b,dev,t1,t2,lab,sub},opt);
+const COIL=(x,y,n,dev,lab,sub)=>({t:'coil',x,y,n,dev,lab,sub});
+const LAMP=(x,y,n,col,lab,sub)=>({t:'lamp',x,y,n,col,lab,sub});
+const LINK=(x1,x2,y)=>({t:'link',x1,x2,y});
+
+function tag(x,y,t,cls='tg'){const w=8+String(t).length*7.5;return `<g class="${cls}"><rect x="${x-w/2}" y="${y-8}" width="${w}" height="16" rx="3"/><text x="${x}" y="${y+4}">${t}</text></g>`}
+const NCK=k=>['NC','PB_NC','T_NC','FT'].includes(k);
+
+function render(e,i){
+  const {x,y}=e;
+  switch(e.t){
+  case 'w': return `<path class="wr" data-n="${e.n}" d="M${e.p.map(p=>p.join(' ')).join('L')}"/>`;
+  case 'dot': return `<circle class="dot" data-n="${e.n}" cx="${x}" cy="${y}" r="4"/>`;
+  case 'an': return tag(x,y,e.n,'an');
+  case 'txt': return `<text class="${e.cls}" x="${x}" y="${y}"${e.anchor?` text-anchor="${e.anchor}"`:''}>${e.s}</text>`;
+  case 'link': return `<path class="link" d="M${e.x1} ${e.y}H${e.x2}"/>`;
+  case 'ftbox': return `<rect class="ftbox" x="${e.x1}" y="${e.y1}" width="${e.x2-e.x1}" height="${e.y2-e.y1}" rx="4"/>`;
+  case 'c': {
+    let s=`<g class="ct${e.kind==='FT'?' omit':''}" data-i="${i}">`;
+    s+=`<path class="wr" data-n="${e.a}" d="M${x} ${y}V${y+18}"/><path class="wr" data-n="${e.b}" d="M${x} ${y+42}V${y+60}"/>`;
+    if(NCK(e.kind)) s+=`<path class="wr" data-n="${e.a}" d="M${x} ${y+18}H${x+13}"/>`;
+    if(e.kind==='Q') s+=`<path class="x" d="M${x-4} ${y+14}l8 8m0 -8l-8 8"/>`;
+    s+=`<path class="blade" d=""/>`;
+    if(e.kind.startsWith('PB')) s+=`<path class="act" d="M${x-7} ${y+30}H${x-30}"/><path class="act solid" d="M${x-30} ${y+21}V${y+39}M${x-30} ${y+21}h-6M${x-30} ${y+39}h-6"/><rect class="hit" data-dev="${e.dev}" x="${x-46}" y="${y+6}" width="62" height="48"/>`;
+    if(e.kind.startsWith('T_')) s+=`<path class="act" d="M${x-7} ${y+30}H${x-24}"/><path class="act solid" d="M${x-32} ${y+30}a8 8 0 0 1 16 0M${x-24} ${y+22}V${y+30}"/>`;
+    if(e.t1!=null) s+=tag(x-24,y+9,e.t1)+tag(x-24,y+51,e.t2);
+    if(e.lab) s+=`<text class="lab" x="${x+18}" y="${y+33}">${e.lab}</text>`;
+    if(e.sub) s+=`<text class="sub" x="${x+18}" y="${y+47}">${e.sub}</text>`;
+    return s+'</g>';}
+  case 'coil': return `<g class="coil" data-dev="${e.dev}"><path class="wr" data-n="${e.n}" d="M${x} ${y}V${y+16}"/><path class="wr" data-n="L2" d="M${x} ${y+44}V${y+60}"/><rect x="${x-20}" y="${y+16}" width="40" height="28" rx="2"/>${tag(x-30,y+9,'A1')}${tag(x-30,y+51,'A2')}<text class="lab" x="${x+26}" y="${y+33}">${e.lab}</text><text class="sub" x="${x+26}" y="${y+47}">${e.sub||''}</text></g>`;
+  case 'lamp': return `<g class="lamp ${e.col}" data-n="${e.n}"><path class="wr" data-n="${e.n}" d="M${x} ${y}V${y+16}"/><path class="wr" data-n="L2" d="M${x} ${y+44}V${y+60}"/><circle cx="${x}" cy="${y+30}" r="14"/><path d="M${x-10} ${y+20}l20 20m0 -20l-20 20"/>${tag(x-30,y+9,'X1')}${tag(x-30,y+51,'X2')}<text class="lab" x="${x+22}" y="${y+33}">${e.lab}</text><text class="sub" x="${x+22}" y="${y+47}">${e.sub}</text></g>`;
+  case 'motor': {const r=e.r, b=(a)=>{const c=Math.cos(a),s=Math.sin(a);return `M0 0L${(r-14)*Math.cos(a-.35)} ${(r-14)*Math.sin(a-.35)}A${r-14} ${r-14} 0 0 1 ${(r-14)*Math.cos(a+.35)} ${(r-14)*Math.sin(a+.35)}Z`};
+    return `<g class="motor"><circle class="mot" cx="${x}" cy="${y}" r="${r}"/><g transform="translate(${x} ${y})"><g class="rotor">${[0,2.094,4.189].map(a=>`<path d="${b(a)}"/>`).join('')}<circle r="${Math.max(4,r*.12)}" fill="var(--panel)"/></g></g><text class="mtxt" x="${x}" y="${y+r+22}">M 3~</text></g>`;}
+  case 'mbox': {let s=`<g class="mboxg"><rect class="mbox" x="${e.x1}" y="${e.y1}" width="${e.x2-e.x1}" height="${e.y2-e.y1}" rx="6"/>`;
+    e.cols.forEach(([cx,top,bot])=>{let p=`M${cx} ${e.y1+20}`;const n=8,h=(e.y2-e.y1-40)/n;for(let k=0;k<n;k++)p+=`L${cx+(k%2?-7:7)} ${e.y1+20+h*(k+.5)}`;p+=`L${cx} ${e.y2-20}`;
+      s+=`<path class="wind" d="M${cx} ${e.y1+10}V${e.y1+20}${p.slice(p.indexOf('L'))}V${e.y2-10}"/><circle class="term" cx="${cx}" cy="${e.y1+10}" r="6"/><circle class="term" cx="${cx}" cy="${e.y2-10}" r="6"/><text class="lab" x="${cx+11}" y="${e.y1+16}" style="font-size:14px">${top}</text><text class="lab" x="${cx+11}" y="${e.y2-4}" style="font-size:14px">${bot}</text>`;});
+    return s+'</g>';}
+  }
+  return '';
+}
+
+/* ---------- Q2 (comando) ---------- */
+const q2=()=>[TX(80,16,'L1','bus'),TX(40,16,'L2','bus'),W('L1',[80,22],[80,30]),W('L2in',[40,22],[40,30]),
+  C('Q',80,30,'L1','1','Q2','1','2','Q2','comando'),C('Q',40,30,'L2in','L2','Q2','3','4'),LINK(34,74,60)];
+const top=()=>[...q2(),W('1',[80,90],[80,100],[150,100],[150,110]),A('1',115,100),
+  C('FT',150,110,'1','2','FT1','95','96','FT1','bancada: ponte'),
+  W('2',[150,170],[150,200]),A('2',150,185),
+  C('PB_NC',150,200,'2','3','S0','1','2','S0','desliga')];
+
+/* ---------- força ---------- */
+const q1=(xs)=>[...['L1','L2','L3'].map((p,k)=>TX(xs[k],18,p,'bus')),...xs.map((x,k)=>W('L'+(k+1),[x,24],[x,50])),
+  ...xs.map((x,k)=>C('Q',x,50,'L'+(k+1),'q'+(k+1),'Q1',String(2*k+1),String(2*k+2))),LINK(xs[0]-6,xs[2]+4,80),TX(xs[2]+18,84,'Q1'),TX(xs[2]+18,98,'disjuntor','sub')];
+const poles=(xs,y,ins,outs,dev,kind='NO')=>[...xs.map((x,k)=>C(kind,x,y,ins[k],outs[k],dev,String(2*k+1),String(2*k+2))),LINK(xs[0]-6,xs[2]+4,y+30)];
+
+/* ---------- etapas ---------- */
+const POW_DIRECT={vb:[340,500],els:[...q1([110,160,210]),
+  ...[110,160,210].map((x,k)=>W('q'+(k+1),[x,110],[x,140])),...poles([110,160,210],140,['q1','q2','q3'],['k1','k2','k3'],'K1'),TX(228,174,'K1'),TX(228,188,'contator','sub'),
+  ...[110,160,210].map((x,k)=>W('k'+(k+1),[x,200],[x,230])),{t:'ftbox',x1:84,x2:224,y1:236,y2:284},...poles([110,160,210],230,['k1','k2','k3'],['m1','m2','m3'],'FT1','FT'),TX(234,262,'FT1'),TX(234,276,'bancada: ponte','sub'),
+  W('m1',[110,290],[110,355],[125,385]),W('m2',[160,290],[160,370]),W('m3',[210,290],[210,355],[195,385]),
+  TX(96,345,'1','lab'),TX(146,345,'2','lab'),TX(218,345,'3','lab'),{t:'motor',x:160,y:420,r:50}],
+  motor:'abc'};
+
+const POW_REV={vb:[490,540],els:[...q1([100,150,200]),
+  W('q1',[100,110],[100,170]),W('q2',[150,110],[150,170]),W('q3',[200,110],[200,170]),
+  W('q1',[100,130],[330,130],[330,170]),W('q2',[150,142],[380,142],[380,170]),W('q3',[200,154],[430,154],[430,170]),
+  D('q1',100,130),D('q2',150,142),D('q3',200,154),
+  ...poles([100,150,200],170,['q1','q2','q3'],['u','v','w'],'K1'),TX(218,204,'K1'),TX(218,218,'horário','sub'),
+  ...poles([330,380,430],170,['q1','q2','q3'],['w','v','u'],'K2'),TX(448,204,'K2'),TX(448,218,'anti','sub'),
+  W('w',[330,230],[330,250],[200,250]),W('v',[380,230],[380,262],[150,262]),W('u',[430,230],[430,274],[100,274]),
+  W('u',[100,230],[100,300]),W('v',[150,230],[150,300]),W('w',[200,230],[200,300]),D('w',200,250),D('v',150,262),D('u',100,274),
+  {t:'ftbox',x1:74,x2:214,y1:306,y2:354},...poles([100,150,200],300,['u','v','w'],['m1','m2','m3'],'FT1','FT'),TX(224,332,'FT1'),TX(224,346,'bancada: ponte','sub'),
+  W('m1',[100,360],[100,420],[115,450]),W('m2',[150,360],[150,435]),W('m3',[200,360],[200,420],[185,450]),
+  TX(86,410,'1'),TX(136,410,'2'),TX(208,410,'3'),{t:'motor',x:150,y:485,r:50},
+  TX(330,300,'K2 troca L1 ↔ L3','sub'),TX(330,316,'L2 fica no mesmo lugar','sub')],
+  motor:'abc'};
+
+const POW_YD={vb:[490,730],els:[...q1([100,150,200]),
+  ...[100,150,200].map((x,k)=>W('q'+(k+1),[x,110],[x,140])),...poles([100,150,200],140,['q1','q2','q3'],['k1','k2','k3'],'K1'),TX(218,174,'K1'),TX(218,188,'rede','sub'),
+  ...[100,150,200].map((x,k)=>W('k'+(k+1),[x,200],[x,220])),{t:'ftbox',x1:74,x2:214,y1:226,y2:274},...poles([100,150,200],220,['k1','k2','k3'],['f1','f2','f3'],'FT1','FT'),TX(224,252,'FT1'),TX(224,266,'bancada: ponte','sub'),
+  W('f1',[100,280],[100,350]),W('f2',[150,280],[150,350]),W('f3',[200,280],[200,350]),
+  W('f1',[100,300],[300,300],[300,380]),W('f2',[150,312],[350,312],[350,380]),W('f3',[200,324],[400,324],[400,380]),
+  D('f1',100,300),D('f2',150,312),D('f3',200,324),
+  {t:'mbox',x1:70,x2:232,y1:340,y2:480,cols:[[100,'1','4'],[150,'2','5'],[200,'3','6']]},
+  ...poles([300,350,400],380,['f1','f2','f3'],['t6','t4','t5'],'K2'),TX(418,414,'K2'),TX(418,428,'triângulo','sub'),
+  W('t6',[300,440],[300,520],[200,520]),W('t4',[350,440],[350,540],[100,540]),W('t5',[400,440],[400,560],[150,560]),
+  W('t4',[100,470],[100,620]),W('t5',[150,470],[150,620]),W('t6',[200,470],[200,620]),D('t6',200,520),D('t4',100,540),D('t5',150,560),
+  ...poles([100,150,200],620,['t4','t5','t6'],['y','y','y'],'K3'),TX(218,654,'K3'),TX(218,668,'estrela','sub'),
+  W('y',[100,680],[100,700],[200,700]),W('y',[150,680],[150,700]),W('y',[200,680],[200,700]),D('y',150,700),TX(212,704,'ponto estrela','sub'),
+  {t:'motor',x:380,y:640,r:40},TX(238,494,'motor de 6 pontas','sub')],
+  motor:'yd'};
+
+const ETAPAS={
+ 1:{coils:['K1'],buttons:[['S0','red','Desliga'],['S1','green','Liga']],pow:POW_DIRECT,
+   cmd:{vb:[250,530],els:[...top(),W('3',[150,260],[150,300]),A('3',150,280),
+     C('PB_NO',150,300,'3','4','S1','3','4','S1','liga'),W('4',[150,360],[150,420]),A('4',150,390),
+     COIL(150,420,'4','K1','K1','contator'),W('L2',[150,480],[150,510],[40,510],[40,90]),TX(95,524,'L2 (volta)','sub')]},
+   hint:'Segure o S1. Solte. O motor só gira enquanto você segura.'},
+ 2:{coils:['K1'],buttons:[['S0','red','Desliga'],['S1','green','Liga']],pow:POW_DIRECT,
+   cmd:{vb:[540,530],els:[...top(),W('3',[150,260],[150,290],[450,290],[450,300]),W('3',[150,290],[150,300]),W('3',[250,290],[250,300]),A('3',150,275),D('3',150,290),D('3',250,290),
+     C('PB_NO',150,300,'3','4','S1','3','4','S1','liga'),C('NO',250,300,'3','4','K1','13','14','K1','selo'),C('NC',450,300,'3','5','K1','21','22','K1','NF'),
+     W('4',[150,360],[150,420]),W('4',[250,360],[250,390],[150,390]),W('4',[150,390],[350,390],[350,420]),D('4',150,390),D('4',250,390),A('4',300,390),
+     W('5',[450,360],[450,420]),A('5',450,390),
+     COIL(150,420,'4','K1','K1','contator'),LAMP(350,420,'4','g','H1','ligado'),LAMP(450,420,'5','r','H2','desligado'),
+     W('L2',[150,480],[150,510]),W('L2',[350,480],[350,510]),W('L2',[450,480],[450,510],[40,510],[40,90]),D('L2',150,510),D('L2',350,510),TX(95,524,'L2 (volta)','sub')]},
+   hint:'Aperte e solte o S1: o selo segura. Depois aperte o S0.'},
+ 3:{coils:['K1','K2'],buttons:[['S0','red','Desliga'],['S1','green','Horário'],['S2','blue','Anti']],interlock:true,pow:POW_REV,
+   cmd:{vb:[590,610],els:[...top(),W('3',[150,260],[150,300]),W('3',[150,290],[510,290],[510,300]),W('3',[250,290],[250,300]),W('3',[400,290],[400,300]),A('3',150,275),D('3',150,290),D('3',250,290),D('3',400,290),
+     C('PB_NO',150,300,'3','4','S1','3','4','S1','horário'),C('NO',250,300,'3','4','K1','13','14','K1','selo'),
+     C('PB_NO',400,300,'3','6','S2','3','4','S2','anti'),C('NO',510,300,'3','6','K2','13','14','K2','selo'),
+     W('4',[150,360],[150,410]),W('4',[250,360],[250,390],[150,390]),D('4',150,390),A('4',200,390),
+     W('6',[400,360],[400,410]),W('6',[510,360],[510,390],[400,390]),D('6',400,390),A('6',455,390),
+     C('NC',150,410,'4','5','K2','21','22','K2','bloqueia',{il:true}),C('NC',400,410,'6','7','K1','21','22','K1','bloqueia',{il:true}),
+     W('5',[150,470],[150,500]),A('5',150,485),W('7',[400,470],[400,500]),A('7',400,485),
+     COIL(150,500,'5','K1','K1','horário'),COIL(400,500,'7','K2','K2','anti'),
+     W('L2',[150,560],[150,590]),W('L2',[400,560],[400,590],[40,590],[40,90]),D('L2',150,590),TX(95,604,'L2 (volta)','sub')]},
+   hint:'Ligue no S1. Tente o S2 com o motor girando. Depois S0 e S2.'},
+ 4:{coils:['K1','KT1','K3','K2'],timer:'KT1',buttons:[['S0','red','Desliga'],['S1','green','Liga']],interlock:true,pow:POW_YD,
+   cmd:{vb:[630,700],els:[...top(),W('3',[150,260],[150,300]),W('3',[150,290],[250,290],[250,300]),A('3',150,275),D('3',150,290),
+     C('PB_NO',150,300,'3','4','S1','3','4','S1','liga'),C('NO',250,300,'3','4','K1','13','14','K1','selo'),
+     W('4',[150,360],[150,590]),W('4',[250,360],[250,590]),W('4',[150,390],[530,390],[530,410]),W('4',[390,390],[390,410]),D('4',150,390),D('4',250,390),D('4',390,390),A('4',320,390),
+     C('T_NC',390,410,'4','5','KT1','15','16','KT1','NF temp.'),C('T_NO',530,410,'4','7','KT1','15','18','KT1','NA temp.'),
+     W('5',[390,470],[390,500]),A('5',390,485),W('7',[530,470],[530,500]),A('7',530,485),
+     C('NC',390,500,'5','6','K2','21','22','K2','bloqueia',{il:true}),C('NC',530,500,'7','8','K3','21','22','K3','bloqueia',{il:true}),
+     W('6',[390,560],[390,590]),A('6',390,575),W('8',[530,560],[530,590]),A('8',530,575),
+     COIL(150,590,'4','K1','K1','rede'),COIL(250,590,'4','KT1','KT1','tempo'),COIL(390,590,'6','K3','K3','estrela'),COIL(530,590,'8','K2','K2','triângulo'),
+     W('L2',[150,650],[150,680]),W('L2',[250,650],[250,680]),W('L2',[390,650],[390,680]),W('L2',[530,650],[530,680],[40,680],[40,90]),D('L2',150,680),D('L2',250,680),D('L2',390,680),TX(95,694,'L2 (volta)','sub')]},
+   hint:'Aperte o S1 e acompanhe: estrela → tempo → triângulo.'}
+};
+
+/* ---------- tabelas ---------- */
+const an=n=>`<span class="an-h">${n}</span>`, t=s=>s.replace(/\b(\d{1,2}|A[12]|X[12])\b(?![^<]*>)/g,'<span class="t">$1</span>');
+const head=`<table><thead><tr><th>Fio</th><th>Sai de</th><th>Vai para</th><th>Para quê</th></tr></thead><tbody>`;
+const row=(n,a,b,why='',cls='')=>`<tr class="${cls}"><td class="n">${n==='★'?'★':an(n)}</td><td>${t(a)}</td><td>${t(b)}</td><td>${why}</td></tr>`;
+const entrada=row('L1','Rede L1','Q2 borne 1','alimenta o comando')+row('L2','Rede L2','Q2 borne 3','comando é 220 V entre fases');
+const ftRows=row('1','Q2 borne 2','FT1 borne 95','instalação real','ft')+row('2','FT1 borne 96','S0 borne 1','instalação real','ft')+row('★','Q2 borne 2','S0 borne 1','<b>Na bancada (sem térmico): um fio direto</b>','bench');
+const TBL={
+ c1:head+entrada+ftRows+row('3','S0 borne 2','S1 borne 3','depois do desliga')+row('4','S1 borne 4','K1 A1','liga a bobina')+row('L2','K1 A2','Q2 borne 4','fecha o circuito')+'</tbody></table>',
+ c2:head+entrada+ftRows+row('3','S0 borne 2','S1 borne 3','')+row('3','S1 borne 3','K1 borne 13','⭐ começo do selo','star')+row('3','K1 borne 13','K1 borne 21','alimenta o sinaleiro H2')
+   +row('4','S1 borne 4','K1 borne 14','⭐ fim do selo: 13-14 em paralelo com o S1','star')+row('4','K1 borne 14','K1 A1','bobina')+row('4','K1 A1','H1 X1','sinaleiro ligado')
+   +row('5','K1 borne 22','H2 X1','sinaleiro desligado')+row('L2','K1 A2','H1 X2','')+row('L2','H1 X2','H2 X2','')+row('L2','H2 X2','Q2 borne 4','fecha o circuito')+'</tbody></table>',
+ c3:head+entrada+ftRows+row('3','S0 borne 2','S1 borne 3','')+row('3','S1 borne 3','S2 borne 3','os dois botões no mesmo ponto')+row('3','S1 borne 3','K1 borne 13','⭐ selo do K1','star')+row('3','S2 borne 3','K2 borne 13','⭐ selo do K2','star')
+   +row('4','S1 borne 4','K1 borne 14','⭐ fim do selo do K1','star')+row('4','K1 borne 14','K2 borne 21','intertravamento: NF do K2 no ramo do K1')+row('5','K2 borne 22','K1 A1','bobina K1')
+   +row('6','S2 borne 4','K2 borne 14','⭐ fim do selo do K2','star')+row('6','K2 borne 14','K1 borne 21','intertravamento: NF do K1 no ramo do K2')+row('7','K1 borne 22','K2 A1','bobina K2')
+   +row('L2','K1 A2','K2 A2','')+row('L2','K2 A2','Q2 borne 4','fecha o circuito')+'</tbody></table>',
+ c4:head+entrada+ftRows+row('3','S0 borne 2','S1 borne 3','')+row('3','S1 borne 3','K1 borne 13','⭐ selo','star')
+   +row('4','S1 borne 4','K1 borne 14','⭐ fim do selo','star')+row('4','K1 borne 14','K1 A1','bobina K1 (rede)')+row('4','K1 A1','KT1 A1','temporizador começa a contar')+row('4','KT1 A1','KT1 borne 15','comum dos contatos do KT1')
+   +row('5','KT1 borne 16','K2 borne 21','NF temporizado → ramo da estrela')+row('6','K2 borne 22','K3 A1','bobina K3 (estrela)')
+   +row('7','KT1 borne 18','K3 borne 21','NA temporizado → ramo do triângulo')+row('8','K3 borne 22','K2 A1','bobina K2 (triângulo)')
+   +row('L2','K1 A2','KT1 A2','')+row('L2','KT1 A2','K3 A2','')+row('L2','K3 A2','K2 A2','')+row('L2','K2 A2','Q2 borne 4','fecha o circuito')+'</tbody></table>',
+};
+const fhead=`<table><thead><tr><th>Sai de</th><th>Vai para</th><th>Observação</th></tr></thead><tbody>`;
+const fr=(a,b,w='',cls='')=>`<tr class="${cls}"><td>${t(a)}</td><td>${t(b)}</td><td>${w}</td></tr>`;
+const fQ1=fr('Rede L1, L2, L3','Q1 bornes 1, 3, 5','');
+TBL.f1=fhead+fQ1+fr('Q1 bornes 2, 4, 6','K1 bornes 1, 3, 5','')+fr('K1 bornes 2, 4, 6','FT1 1, 3, 5 → motor','instalação real','ft')
+  +fr('K1 borne 2 / 4 / 6','Motor 1 / 2 / 3','<b>Na bancada: direto ao motor</b>','bench')+fr('Caixa do motor','pontes 1-6, 2-4, 3-5','fechado em triângulo (220 V)','star')+'</tbody></table>';
+TBL.f3=fhead+fQ1+fr('Q1 bornes 2, 4, 6','K1 bornes 1, 3, 5','')+fr('K1 bornes 1, 3, 5','K2 bornes 1, 3, 5','pontes: os dois recebem a rede igual')
+  +fr('K1 borne 2 / 4 / 6','Motor 1 / 2 / 3','horário (na bancada, sem FT1)','bench')
+  +fr('K2 borne 2','Motor 3 (junto com K1 6)','⭐ L1 vai para o 3','star')+fr('K2 borne 4','Motor 2 (junto com K1 4)','L2 não muda')+fr('K2 borne 6','Motor 1 (junto com K1 2)','⭐ L3 vai para o 1','star')
+  +fr('Caixa do motor','pontes 1-6, 2-4, 3-5','fechado em triângulo (220 V)')+'</tbody></table>';
+TBL.f4=fhead+fQ1+fr('Q1 bornes 2, 4, 6','K1 bornes 1, 3, 5','')+fr('K1 borne 2 / 4 / 6','Motor 1 / 2 / 3','na bancada, sem FT1','bench')
+  +fr('K1 borne 2 / 4 / 6','K2 bornes 1 / 3 / 5','alimenta o triângulo')
+  +fr('K2 borne 2','Motor 6','⭐ L1 também no 6 (1-6)','star')+fr('K2 borne 4','Motor 4','⭐ L2 também no 4 (2-4)','star')+fr('K2 borne 6','Motor 5','⭐ L3 também no 5 (3-5)','star')
+  +fr('Motor 4 / 5 / 6','K3 bornes 1 / 3 / 5','entrada da estrela')+fr('K3 bornes 2, 4, 6','ponte entre os três','⭐ ponto estrela','star')+fr('Caixa do motor','sem pontes','quem fecha é K2 ou K3')+'</tbody></table>';
+
+/* ---------- checklists ---------- */
+const CK={
+ 1:['Q1 e Q2 desligados, bloqueados e sinalizados. Ausência de tensão testada.','Todos os fios com anilha e bem apertados (puxe de leve).','Multímetro em Ω entre Q2 borne 2 e Q2 borne 4: em repouso deve dar <b>aberto</b>.','Aperte o S1: deve aparecer a <b>resistência da bobina</b> do K1.','Aperte S1 e S0 juntos: volta a aberto.','Força: com K1 acionado na mão, cada fase tem continuidade até o motor, e não há continuidade entre fases.','<span class="stop">Pare aqui. Chame o instrutor para liberar a energização.</span>'],
+ 2:['Q1 e Q2 desligados, bloqueados e sinalizados. Ausência de tensão testada.','Tire os sinaleiros do circuito para medir (ou anote que eles mudam a leitura).','Ω entre Q2 2 e Q2 4: em repouso, aberto.','Aperte o K1 com a mão (pino de teste): aparece a bobina. Isso prova que o selo 13-14 está no lugar certo.','Com o K1 apertado na mão, aperte o S0: volta a aberto.','Conferir: o 13 sai do fio 3 (depois do S0), não do fio 2.','<span class="stop">Pare aqui. Chame o instrutor para liberar a energização.</span>'],
+ 3:['Q1 e Q2 desligados, bloqueados e sinalizados. Ausência de tensão testada.','Ω entre Q2 2 e Q2 4 apertando S1: aparece a bobina do K1. Apertando S2: a do K2.','Aperte o K1 na mão e aperte o S2: <b>não</b> pode aparecer a bobina do K2 (intertravamento ok). Repita ao contrário.','Força: confira que K2 leva L1 ao borne 3 e L3 ao borne 1 do motor.','Só para entender: com tudo desligado, acione K1 e K2 na mão e meça entre L1 e L3 na saída do Q1. Dá continuidade: é o curto que o intertravamento impede.','<span class="stop">Pare aqui. Chame o instrutor para liberar a energização.</span>'],
+ 4:['Q1 e Q2 desligados, bloqueados e sinalizados. Ausência de tensão testada.','Pontes da caixa do motor retiradas. As 6 pontas identificadas.','KT1 ajustado (por exemplo 5 s) e bornes 15, 16, 18 conferidos na etiqueta.','Ω entre Q2 2 e Q2 4 apertando S1: aparecem K1, KT1 e K3 em paralelo (resistência menor que uma bobina só).','Aperte K3 na mão: o 21-22 do K3 abre e o ramo do K2 fica isolado. Aperte K2 na mão: o ramo do K3 fica isolado.','Força: K2 leva L1→6, L2→4, L3→5. K3 une 4, 5 e 6.','<span class="stop">Pare aqui. Chame o instrutor para liberar a energização.</span>'],
+};
+
+/* ---------- legenda ---------- */
+function mini(els,w,h){return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true">${els.map(render).join('')}</svg>`}
+$('#legend').innerHTML=[
+ [[C('PB_NO',50,5,'a','b','x','3','4','S1')],'<b>Botão NA (3-4)</b><br>Aberto. Fecha só enquanto você aperta. É o botão de ligar.'],
+ [[C('PB_NC',50,5,'a','b','x','1','2','S0')],'<b>Botão NF (1-2)</b><br>Fechado. Abre quando você aperta. É o botão de desligar.'],
+ [[C('NO',50,5,'a','b','x','13','14','K1')],'<b>Contato NA do contator (13-14)</b><br>Fecha quando a bobina liga. Usado no selo.'],
+ [[C('NC',50,5,'a','b','x','21','22','K1')],'<b>Contato NF do contator (21-22)</b><br>Abre quando a bobina liga. Usado no intertravamento.'],
+ [[COIL(50,5,'a','x','K1','')],'<b>Bobina (A1-A2)</b><br>O "ímã" do contator. Energizou, ele puxa todos os contatos.'],
+ [[C('T_NO',50,5,'a','b','x','15','18','KT1')],'<b>Contato temporizado (15-16 NF, 15-18 NA)</b><br>Só muda depois do tempo ajustado.'],
+].map(([els,txt])=>`<div>${mini(els,100,70)}<span>${txt}</span></div>`).join('');
+
+/* ---------- simulador ---------- */
+let S=null;
+function initSim(id){
+  const E=ETAPAS[id], host=$(`[data-sim="${id}"]`);
+  const svg=(d,cls)=>`<svg class="${cls}" viewBox="0 0 ${d.vb[0]} ${d.vb[1]}" style="width:100%;max-width:${d.vb[0]*1.5}px;min-width:${Math.round(d.vb[0]*.82)}px">${d.els.map(render).join('')}</svg>`;
+  const btns=E.buttons.map(([d,c,l])=>`<button class="pb ${c}" data-dev="${d}" aria-label="${d} ${l} (segure)">${d}<small>${l}</small></button>`).join('');
+  host.innerHTML=`<figure class="dg"><figcaption>Comando <span>toque e segure os botões</span></figcaption><div class="svgwrap">${svg(E.cmd,'cmd')}</div></figure>
+   <figure class="dg"><figcaption>Força <span>cores = fases L1 · L2 · L3</span></figcaption><div class="svgwrap">${svg(E.pow,'pow')}</div></figure>
+   <div class="ctl">
+     <div class="btnrow"><div class="sw"><button class="toggle" data-pw aria-pressed="true" aria-label="Disjuntores Q1 e Q2"></button>Q1 + Q2</div>${btns}</div>
+     <div class="status">
+       <div class="mstat"><svg class="mini" width="40" height="40" viewBox="-20 -20 40 40" aria-hidden="true"><circle r="19" fill="none" stroke="currentColor" stroke-width="2"/><g class="rotor">${[0,120,240].map(a=>`<path transform="rotate(${a})" d="M0 0L-5 -15A16 16 0 0 1 5 -15Z"/>`).join('')}</g></svg><span data-ms>Parado</span></div>
+       <div class="chips">${E.coils.map(c=>`<span class="chip" data-chip="${c}">${c}</span>`).join('')}</div>
+       ${E.timer?`<div class="tbar"><i data-tb></i></div><div class="tline"><label for="tset-${id}">Tempo do KT1: <b data-tv>5</b> s</label><input type="range" id="tset-${id}" min="2" max="10" value="5" data-tset></div>`:''}
+       <p class="hint">${E.hint}</p>
+     </div>
+     ${E.interlock?`<div class="sw"><button class="toggle warn" data-il aria-pressed="false" aria-label="Simular sem intertravamento"></button>Simular erro:<br>sem intertravamento</div>`:''}
+     <div class="alert" data-alert hidden></div>
+   </div>`;
+  const cmdEls=E.cmd.els, powEls=E.pow.els;
+  S={id,E,host,power:true,pressed:{},coil:{},tStart:null,tDone:false,T:5000,noIL:false,tripT:null,
+     cmdSvg:$('svg.cmd',host),powSvg:$('svg.pow',host),cmdEls,powEls};
+  // eventos dos botões (segurar)
+  const press=(d,v)=>{S.pressed[d]=v;$$(`.pb[data-dev="${d}"]`,host).forEach(b=>b.classList.toggle('down',v));update()};
+  $$('.pb',host).forEach(b=>{const d=b.dataset.dev;
+    b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture?.(e.pointerId);press(d,true)});
+    ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>S.pressed[d]&&press(d,false)));
+    b.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat){e.preventDefault();press(d,true)}});
+    b.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter')press(d,false)});
+    b.addEventListener('contextmenu',e=>e.preventDefault());});
+  $$('.hit',host).forEach(h=>{const d=h.dataset.dev;
+    h.addEventListener('pointerdown',e=>{e.preventDefault();h.setPointerCapture?.(e.pointerId);press(d,true)});
+    ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>h.addEventListener(ev,()=>S.pressed[d]&&press(d,false)));});
+  const pw=$('[data-pw]',host);
+  pw.addEventListener('click',()=>{S.power=!S.power;pw.setAttribute('aria-pressed',S.power);if(S.power)alertMsg('');update()});
+  const il=$('[data-il]',host);
+  if(il)il.addEventListener('click',()=>{S.noIL=!S.noIL;il.setAttribute('aria-pressed',S.noIL);update()});
+  const ts=$('[data-tset]',host);
+  if(ts)ts.addEventListener('input',()=>{S.T=ts.value*1000;$('[data-tv]',host).textContent=ts.value});
+  update();
+}
+function alertMsg(m){const a=$('[data-alert]',S.host);a.hidden=!m;a.textContent=m}
+
+function conducts(e){
+  const c=S.coil;
+  switch(e.kind){
+    case 'Q':return S.power;
+    case 'FT':return true;
+    case 'PB_NO':return !!S.pressed[e.dev];
+    case 'PB_NC':return !S.pressed[e.dev];
+    case 'NO':return !!c[e.dev];
+    case 'NC':return (e.il&&S.noIL)?true:!c[e.dev];
+    case 'T_NO':return S.tDone;
+    case 'T_NC':return !S.tDone;
+  }return false;
+}
+function reach(els,src){
+  const adj={};const add=(a,b)=>{(adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a)};
+  els.forEach(e=>{if(e.t==='c'&&conducts(e))add(e.a,e.b)});
+  const seen=new Set([src]),q=[src];while(q.length){const n=q.shift();(adj[n]||[]).forEach(m=>{if(!seen.has(m)){seen.add(m);q.push(m)}})}return seen;
+}
+function solve(){
+  const now=performance.now(),E=S.E;
+  for(let it=0;it<12;it++){
+    const live=reach(S.cmdEls,'L1');
+    const nc={};S.cmdEls.forEach(e=>{if(e.t==='coil')nc[e.dev]=S.power&&live.has(e.n)});
+    if(E.timer){if(nc[E.timer]){if(S.tStart==null)S.tStart=now}else S.tStart=null;
+      S.tDone=S.tStart!=null&&now-S.tStart>=S.T}
+    const same=Object.keys(nc).every(k=>!!nc[k]===!!S.coil[k]);S.coil=nc;S.live=live;if(same)break;
+  }
+  // força
+  const ph={};['L1','L2','L3'].forEach((p,k)=>{if(!S.power)return;reach(S.powEls,p).forEach(n=>{(ph[n]=ph[n]||new Set()).add(k+1)})});
+  S.ph=ph;S.short=Object.values(ph).some(s=>s.size>1);
+}
+const one=n=>{const s=S.ph[n];return s&&s.size===1?[...s][0]:null};
+function motorState(){
+  if(S.short)return{txt:'Curto-circuito!',alarm:true};
+  if(S.E.pow.motor==='abc'){const m=['m1','m2','m3'].map(one);
+    if(m.every(Boolean)&&new Set(m).size===3){const seq=m.join('');const cw=['123','231','312'].includes(seq);return{run:true,rev:!cw,spd:.6,txt:cw?'Girando · horário':'Girando · anti-horário'}}
+    return{txt:'Parado'};}
+  const f=['f1','f2','f3'].map(one), tt=['t4','t5','t6'].map(one);
+  if(!(f.every(Boolean)&&new Set(f).size===3))return{txt:'Parado'};
+  if(tt.every(Boolean))return{run:true,spd:.45,txt:'Triângulo · 220 V por bobina',delta:true};
+  if(S.coil.K3)return{run:true,spd:1.5,txt:'Estrela · 127 V por bobina',star:true};
+  return{txt:'Motor sem fechamento'};
+}
+function paint(svg,els,colorOf){
+  $$('[data-n]',svg).forEach(p=>{const cls=colorOf(p.dataset.n);p.classList.remove('live','p1','p2','p3','short');if(cls)p.classList.add(cls)});
+  $$('.ct',svg).forEach(g=>{const e=els[+g.dataset.i],x=e.x,y=e.y,on=conducts(e),bl=$('.blade',g);
+    const nc=NCK(e.kind),rem=e.il&&S.noIL;
+    bl.setAttribute('d',rem?`M${x} ${y+42}L${x} ${y+18}`:on?(nc?`M${x} ${y+42}L${x+13} ${y+16}`:`M${x} ${y+42}L${x} ${y+18}`):`M${x} ${y+42}L${x-13} ${y+19}`);
+    bl.classList.toggle('removed',!!rem);
+    bl.classList.remove('live','p1','p2','p3','short');const cls=on?colorOf(e.a):null;if(cls)bl.classList.add(cls);});
+}
+function update(){
+  if(!S)return;solve();const m=motorState();
+  paint(S.cmdSvg,S.cmdEls,n=>S.live.has(n)&&n!=='L2'&&n!=='L2in'&&S.power?'live':null);
+  paint(S.powSvg,S.powEls,n=>{const s=S.ph[n];if(!s)return null;return s.size>1?'short':'p'+[...s][0]});
+  $$('.coil',S.cmdSvg).forEach(g=>g.classList.toggle('on',!!S.coil[g.dataset.dev]));
+  $$('.lamp',S.cmdSvg).forEach(g=>g.classList.toggle('on',S.power&&S.live.has(g.dataset.n)));
+  $$('[data-chip]',S.host).forEach(c=>c.classList.toggle('on',!!S.coil[c.dataset.chip]));
+  const mg=$('.motor',S.powSvg),mini=$('.mini',S.host);
+  [mg,mini].forEach(g=>{if(!g)return;g.classList.toggle('run',!!m.run);g.classList.toggle('rev',!!m.rev);g.style.setProperty('--spd',(m.spd||.7)+'s')});
+  const mb=$('.mboxg',S.powSvg);if(mb)mb.classList.toggle('run-w',!!m.run);
+  $('[data-ms]',S.host).textContent=m.txt;$('.mstat',S.host).classList.toggle('alarm',!!m.alarm);
+  const tb=$('[data-tb]',S.host);if(tb)tb.style.width=(S.tStart==null?0:Math.min(100,(performance.now()-S.tStart)/S.T*100))+'%';
+  if(S.short&&S.power&&!S.tripT){S.tripT=setTimeout(()=>{S.tripT=null;if(!S)return;S.power=false;S.pressed={};$$('.pb',S.host).forEach(b=>b.classList.remove('down'));
+    $('[data-pw]',S.host).setAttribute('aria-pressed','false');alertMsg('Q1 desarmou: curto entre fases. É isso que o intertravamento evita. Religue o Q1 + Q2 para continuar.');update()},1100)}
+}
+setInterval(()=>{if(S&&S.E.timer&&S.tStart!=null)update()},100);
+
+/* ---------- tabelas e checklists ---------- */
+$$('[data-tbl]').forEach(d=>d.innerHTML=TBL[d.dataset.tbl]);
+$$('[data-ck]').forEach(d=>{const id=d.dataset.ck;d.innerHTML=CK[id].map((s,k)=>{const cid=`ck-${id}-${k}`;return `<label for="${cid}"><input type="checkbox" id="${cid}"${store.get(cid)==='1'?' checked':''}><span>${s}</span></label>`}).join('');
+  $$('input',d).forEach(i=>i.addEventListener('change',()=>store.set(i.id,i.checked?'1':'0')))});
+
+/* ---------- rotas ---------- */
+const routes=$$('section[data-route]').map(s=>s.dataset.route);
+function show(){
+  let r=location.hash.slice(1);if(!routes.includes(r))r='inicio';
+  $$('section[data-route]').forEach(s=>s.hidden=s.dataset.route!==r);
+  $$('.tab').forEach(b=>b.setAttribute('aria-selected',b.dataset.go===r));
+  if(S&&S.tripT)clearTimeout(S.tripT);S=null;
+  const m=r.match(/^etapa-(\d)$/);if(m)initSim(+m[1]);
+  $(`.tab[data-go="${r}"]`)?.scrollIntoView({inline:'nearest',block:'nearest'});
+}
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){location.hash=g.dataset.go;window.scrollTo({top:0})}});
+window.addEventListener('hashchange',show);
+
+/* ---------- modo TV ---------- */
+const tvb=$('#tvbtn');const setTV=v=>{document.documentElement.classList.toggle('tv',v);tvb.setAttribute('aria-pressed',v);tvb.textContent=v?'Sair do modo TV':'Modo TV';store.set('tv',v?'1':'0')};
+tvb.addEventListener('click',()=>setTV(!document.documentElement.classList.contains('tv')));
+setTV(store.get('tv')==='1');
+show();
+})();
+</script>
+
+</body>
+</html>
